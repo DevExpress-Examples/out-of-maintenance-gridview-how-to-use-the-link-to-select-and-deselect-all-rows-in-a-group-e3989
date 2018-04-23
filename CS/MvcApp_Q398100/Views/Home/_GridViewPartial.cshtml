@@ -1,0 +1,42 @@
+@using DevExpress.Web.Mvc.UI;
+@using DevExpress.Web.Mvc;
+@Html.DevExpress().GridView(settings => {
+    settings.Name = "dxGridView";
+    settings.KeyFieldName = "ProductID";
+    settings.CallbackRouteValues = new { Controller = "Home", Action = "GridViewPartial" };
+
+    settings.Columns.Add("ProductID");
+    settings.Columns.Add("ProductName");
+    settings.Columns.Add("CategoryID").GroupIndex = 0;
+    settings.Columns.Add("Discontinued", MVCxGridViewColumnType.CheckBox);
+
+    settings.CommandColumn.Visible = true;
+    settings.CommandColumn.ShowSelectCheckbox = true;
+
+    settings.Settings.ShowGroupPanel = true;
+    settings.SetGroupRowContentTemplateContent(c => {
+        var linkSelect = String.Format("<a onclick='SelectGroupedRows({0}, true);' href='javascript:void(0)'>Select All / </a>", c.VisibleIndex);
+        var linkUnselect = String.Format("<a onclick='SelectGroupedRows({1}, false);' href='javascript:void(0)'>Unselect All Rows: {0}</a>", c.GroupText, c.VisibleIndex);
+
+        var group = String.Format("{0}{1}", linkSelect, linkUnselect);
+        ViewContext.Writer.Write(group);
+    });
+
+    settings.CustomCallback = (s, e) => {
+        ASPxGridView grid = s as ASPxGridView;
+        string[] data = e.Parameters.Split('|');
+
+        int index = int.Parse(data[0]);
+        bool value = bool.Parse(data[1]);
+        if (data.Length == 2) {
+            int startLevel = grid.GetRowLevel(index);
+            int count = grid.VisibleRowCount;
+            for (int i = 1 + index; i < count; i++) {
+                grid.Selection.SetSelection(i, value);
+                if (grid.GetRowLevel(i) <= startLevel)
+                    break;
+            }
+        }
+    };
+
+}).Bind(Model).GetHtml()
